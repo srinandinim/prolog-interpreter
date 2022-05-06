@@ -1,4 +1,5 @@
 from hashlib import new
+from xml.dom.expatbuilder import theDOMImplementation
 from prolog_structures import Rule, RuleBody, Term, Function, Variable, Atom, Number
 from typing import List
 from functools import reduce
@@ -47,14 +48,24 @@ class Interpreter:
 	in the set is Variable.
 	'''
 	def variables_of_term (self, t : Term) -> set :
-		variables = set()
-		for term in t.terms:
-			if isinstance(term, Variable):
-				variables = variables.union({term})
-		return variables
+		if isinstance(t, Function):
+			variables = set()
+			for term in t.terms:
+				variables = variables.union(self.variables_of_term(term))
+			return variables
+		elif isinstance(t, Variable):
+			return set([t])
+
+		return set()
 
 	def variables_of_clause (self, c : Rule) -> set :
-		return self.variables_of_term(c.head)
+		variables = self.variables_of_term(c.head)
+		if c.body.terms:
+			for term in c.body.terms:
+				variables = variables.union(self.variables_of_term(term))
+			return variables
+		else:
+			return variables
 
 
 	'''
@@ -214,10 +225,11 @@ class Interpreter:
 						theta = self.unify(chosen_goal, rule.head)
 						new_resolvent, new_goal = resolvent.copy(), goal.copy()
 
-						chosen_goal = rule.body
 						new_resolvent.extend(rule.body.terms)
-						new_resolvent = self.substitute_in_term(theta, new_resolvent)
-						new_goal = self.substitute_in_term(theta, new_goal)
+						for index in range(len(new_resolvent)):
+							new_resolvent[index] = self.substitute_in_term(theta, new_resolvent[index])
+						for index in range(len(new_goal)):
+							new_goal[index] = self.substitute_in_term(theta, new_goal[index])
 
 						result = dfs(new_resolvent, new_goal, solutions)
 						searched = result or searched

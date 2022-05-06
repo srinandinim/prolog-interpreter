@@ -82,8 +82,13 @@ class Interpreter:
 
 	def substitute_in_clause (self, s : dict, c : Rule) -> Rule:
 		new_head = self.substitute_in_term(s, c.head)
-		new_body = self.substitute_in_term(s, c.body)
-		return Rule(new_head, new_body)
+		if c.body.terms:
+			new_terms = []
+			for term in c.body.terms:
+				new_terms.append(self.substitute_in_term(s, term))
+			return Rule(new_head, RuleBody(new_terms))
+		else:
+			return Rule(new_head, c.body)
 
 	'''
 	Problem 3
@@ -164,30 +169,11 @@ class Interpreter:
 			try:
 				A1 = self.freshen(A1)
 				unifier = self.unify(A, A1.head)
-			except Not_unifiable:
+			except:
 				break
 
 			resolvent.remove(A)
 			resolvent.extend(A1.body.terms)
-
-			# unifiable_clauses = []
-			# for clause in program:
-			# 	clause = self.freshen(clause)
-			# 	try:
-			# 		self.unify(A, clause.head)
-			# 		unifiable_clauses.append(clause)
-			# 	except Not_unifiable:
-			# 		continue
-
-			# if len(unifiable_clauses) == 0:
-			# 	break
-
-			# random_clause_index = random.randint(0, len(unifiable_clauses) - 1)
-			# A1 = self.freshen(unifiable_clauses[random_clause_index])
-			# unifier = self.unify(A, A1.head)
-
-			# resolvent.remove(A)
-			# resolvent.extend(A1.body.terms)
 
 			for index in range(len(G)):
 				G[index] = self.substitute_in_term(unifier, G[index])

@@ -98,10 +98,6 @@ class Interpreter:
 	Please use Python dictionary to represent a subsititution map.
 	'''
 	def unify_helper(self, t1 : Term, t2 : Term, unifier : dict):
-		# print("made checkpoint 3")
-		# print(str(t1) + "\t" + str(t2))
-		# print ([str(key) + "/" + str(unifier[key]) for key in unifier.keys()])
-
 		X = self.substitute_in_term(unifier, t1)
 		Y = self.substitute_in_term(unifier, t2)
 
@@ -121,7 +117,7 @@ class Interpreter:
 			return unifier
 		elif (type(X) is type(Y)) and (isinstance(X, Atom) or isinstance(X, Number) or isinstance(X, Variable)) and (X == Y):
 			return unifier
-		elif isinstance(X, Function) and isinstance(Y, Function) and len(X.terms) == len(Y.terms):
+		elif isinstance(X, Function) and isinstance(Y, Function) and X.relation == Y.relation and len(X.terms) == len(Y.terms):
 			for i in range(0, len(X.terms)):
 				unifier = self.unify_helper(X.terms[i], Y.terms[i], unifier)
 			return unifier
@@ -162,33 +158,39 @@ class Interpreter:
 		resolvent = G.copy()
 
 		while len(resolvent) > 0:
-			random_goal_index = random.randint(0, len(resolvent) - 1)
-			A = resolvent[random_goal_index]
+			A = resolvent[random.randint(0, len(resolvent) - 1)]
+			A1 = program[random.randint(0, len(program) - 1)]
 
-			unifiable_clauses = []
-			for clause in program:
-				refreshed_rule = self.freshen(clause)
-				try:
-					self.unify(A, refreshed_rule.head)
-					unifiable_clauses.append(refreshed_rule)
-				except Not_unifiable:
-					continue
-
-			if len(unifiable_clauses) == 0:
+			try:
+				A1 = self.freshen(A1)
+				unifier = self.unify(A, A1.head)
+			except Not_unifiable:
 				break
-
-			random_clause_index = random.randint(0, len(unifiable_clauses) - 1)
-			A1 = self.freshen(unifiable_clauses[random_clause_index])
-			unifier = self.unify(A, A1.head)
 
 			resolvent.remove(A)
 			resolvent.extend(A1.body.terms)
 
-			copyG = G.copy()
-			G.clear()
+			# unifiable_clauses = []
+			# for clause in program:
+			# 	clause = self.freshen(clause)
+			# 	try:
+			# 		self.unify(A, clause.head)
+			# 		unifiable_clauses.append(clause)
+			# 	except Not_unifiable:
+			# 		continue
 
-			for goal in copyG:
-				G.append(self.substitute_in_term(unifier, goal))
+			# if len(unifiable_clauses) == 0:
+			# 	break
+
+			# random_clause_index = random.randint(0, len(unifiable_clauses) - 1)
+			# A1 = self.freshen(unifiable_clauses[random_clause_index])
+			# unifier = self.unify(A, A1.head)
+
+			# resolvent.remove(A)
+			# resolvent.extend(A1.body.terms)
+
+			for index in range(len(G)):
+				G[index] = self.substitute_in_term(unifier, G[index])
 			for index in range(len(resolvent)):
 				resolvent[index] = self.substitute_in_term(unifier, resolvent[index])
 
@@ -229,6 +231,7 @@ class Interpreter:
 						chosen_goal = rule.body
 						new_resolvent.extend(rule.body.terms)
 						new_resolvent = self.substitute_in_term(theta, new_resolvent)
+						new_goal = self.substitute_in_term(theta, new_goal)
 
 						result = dfs(new_resolvent, new_goal, solutions)
 						searched = result or searched

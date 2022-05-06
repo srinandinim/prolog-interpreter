@@ -11,6 +11,7 @@ def list2str(l):
 if __name__ == '__main__':
 
 	interpreter = Interpreter()
+
 	def ancestor (x, y): return Function ("ancestor", [x, y])
 	def father (x, y): return Function ("father", [x, y])
 	def father_consts (x, y):  return father (Atom (x), Atom (y))
@@ -21,12 +22,23 @@ if __name__ == '__main__':
 					RuleBody([father (Variable ("X"), Variable ("Z")), ancestor (Variable ("Z"), Variable ("Y"))]))
 	pstark = [f1,f2,r1,r2]
 
+	# g = [ancestor (Variable("X"), Atom("robb"))]
+	# print (f"Goal: {list2str(g)}")
+	# g_ = interpreter.nondet_query (pstark, g)
+	# print (f"Solution: {list2str(g_)}")
+	# assert (g_ == [ancestor (Atom("ned"), Atom("robb"))] or
+	# 				g_ == [ancestor (Atom("rickard"), Atom("robb"))])
+
 	g = [ancestor (Variable("X"), Atom("robb"))]
 	print (f"Goal: {list2str(g)}")
-	g_ = interpreter.nondet_query (pstark, g)
-	print (f"Solution: {list2str(g_)}")
-	assert (g_ == [ancestor (Atom("ned"), Atom("robb"))] or
-					g_ == [ancestor (Atom("rickard"), Atom("robb"))])
+	g_ = interpreter.det_query (pstark, g)
+	print (f"Solution g_: {list2str(g_)}")
+	assert (len(g_) == 2)
+	g1, g2 = g_[0], g_[1]
+	print (f"Solution: {list2str(g1)}")
+	print (f"Solution: {list2str(g2)}")
+	assert (g1 == [ancestor (Atom("ned"), Atom("robb"))])
+	assert (g2 == [ancestor (Atom("rickard"), Atom("robb"))])
 
 	"""
 	nil = Atom("nil")

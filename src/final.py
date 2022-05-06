@@ -50,7 +50,7 @@ class Interpreter:
 		variables = set()
 		for term in t.terms:
 			if isinstance(term, Variable):
-				variables.add(term)
+				variables = variables.union({term})
 		return variables
 
 	def variables_of_clause (self, c : Rule) -> set :
@@ -210,5 +210,34 @@ class Interpreter:
 	If the given goal is not a logical consequence of the program, then the result
 	is an empty list. See the test cases (in src/main.py) as examples.
 	'''
+
 	def det_query (self, program : List[Rule], pgoal : List[Term]) -> List[List[Term]]:
-		return [pgoal]
+		def dfs(resolvent : List[Term], goal: List[Term], solutions : List[List[Term]]):
+			if not resolvent:
+				solutions.append(goal)
+				return True
+
+			while (resolvent):
+				chosen_goal = resolvent.pop(0)
+				searched = False
+				for rule in program:
+					try:
+						rule = self.freshen(rule)
+						theta = self.unify(chosen_goal, rule.head)
+						new_resolvent, new_goal = resolvent.copy(), goal.copy()
+
+						chosen_goal = rule.body
+						new_resolvent.extend(rule.body.terms)
+						new_resolvent = self.substitute_in_term(theta, new_resolvent)
+
+						result = dfs(new_resolvent, new_goal, solutions)
+						searched = result or searched
+					except Not_unifiable:
+						continue
+				
+				if not searched:
+					return
+
+		solutions = []
+		dfs(pgoal.copy(), pgoal.copy(), solutions)
+		return solutions
